@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FREDT - Admin Management</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- Toast Container -->
+<div id="toastContainer"></div>
+
+<div class="app-container">
+
+    <!-- ===================== SIDEBAR ===================== -->
+    <aside class="sidebar">
+
+        <div class="logo">
+            <div class="logo-box">
+                <i data-lucide="flame" class="logo-icon-svg"></i>
+            </div>
+            <h1>FREDT</h1>
+        </div>
+
+        <div class="user-card">
+            <div class="user-left">
+                <div class="avatar" id="sidebarAvatar">--</div>
+                <div class="user-info">
+                    <h3 id="sidebarUsername"> </h3>
+                    <p id="sidebarRole">-</p>
+                </div>
+            </div>
+            <i data-lucide="settings" class="settings-icon-svg"></i>
+        </div>
+
+        <!-- MAIN NAV -->
+        <div class="nav">
+            <a href="/" class="nav-item">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/admin" class="nav-item active">
+                <i data-lucide="shield"></i>
+                <span>Admin Management</span>
+            </a>
+        </div>
+
+        <div class="nav-section-title">ANALYTICS</div>
+        <div class="nav">
+            <a href="/reports" class="nav-item">
+                <i data-lucide="file-text"></i>
+                <span>Reports</span>
+            </a>
+        </div>
+
+        <div class="nav-section-title nav-section-title--account">ACCOUNT</div>
+        <div class="nav">
+            <a href="/logout" class="nav-item nav-item--logout">
+                <i data-lucide="log-out"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <main class="main-content">
+
+        <!-- TOP HEADER -->
+        <header class="top-header">
+            <div class="header-left">
+                <div class="breadcrumbs">
+                    <span>FREDT›</span> <strong>Admin Management</strong>
+                </div>
+            </div>
+            <div class="header-right">
+
+                <div class="role-tabs" id="roleTabs">
+                    <span class="role-tab active" onclick="switchRole(this)">Admin</span>
+                    <span class="role-tab" onclick="switchRole(this)">Manager</span>
+                    <span class="role-tab" onclick="switchRole(this)">Safety</span>
+                </div>
+
+                
+                <div class="header-actions">
+                    <div class="notification-wrapper">
+                        <button class="notif-btn" onclick="toggleNotifications()" title="Notifications">
+                            <i data-lucide="bell"></i>
+                            <span class="notif-badge" id="notificationBadge" style="display:none;">0</span>
+                        </button>
+                        <div class="notification-panel" id="notificationPanel">
+                            <div class="panel-header">
+                                <span>Notifications</span>
+                                <span class="notification-count" id="notificationCount">0 New</span>
+                            </div>
+                            <div id="notificationList"></div>
+                        </div>
+                    </div>
+
+                    <div class="profile-wrapper">
+                        <div class="small-avatar" id="headerAvatar" onclick="toggleProfileDropdown()" title="Profile">--</div>
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-avatar" id="dropdownAvatar">--</div>
+                                <div>
+                                    <div class="profile-dropdown-name" id="dropdownFullName">Loading...</div>
+                                    <div class="profile-dropdown-role">
+                                        <span id="dropdownRoleText">-</span>
+                                        <span class="role-badge-pill" id="dropdownRoleBadge">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="permissions-banner admin" id="permissionsBanner">
+                                Full access: all supervisors, alarms, reports &amp; settings
+                            </div>
+                            <hr class="profile-divider">
+                            <div class="profile-dropdown-section-title">ACCOUNT</div>
+                            <div class="profile-dropdown-item" onclick="closeProfileDropdown()">
+                                <i data-lucide="user" class="item-icon-svg"></i> My Profile
+                            </div>
+                            <div class="profile-dropdown-item" onclick="closeProfileDropdown()">
+                                <i data-lucide="settings" class="item-icon-svg"></i> Settings
+                            </div>
+                            <hr class="profile-divider">
+                            <div class="profile-dropdown-item danger" onclick="window.location='/logout'">
+                                <i data-lucide="log-out" class="item-icon-svg"></i> Logout
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===================== KPI STATS ROW ===================== -->
+        <div class="admin-stats-row">
+
+            <!-- Admin management logic -->
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <div class="icon-box blue-bg">
+                        <i data-lucide="users" class="icon-blue"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="statTotalAdmins">--</div>
+                <div class="stat-label">Total Admins</div>
+            </div>
+
+            <!-- Role permissions logic -->
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <div class="icon-box" style="background:#dcfce7;">
+                        <i data-lucide="shield" style="color:#16a34a;width:19px;height:19px;"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="statActiveRoles">--</div>
+                <div class="stat-label">Active Roles</div>
+            </div>
+
+            <!-- Fire simulation and alert logic -->
+            <div class="stat-card" data-card="alerted-users"
+                 style="cursor:pointer; transition:box-shadow 0.2s;"
+                 onclick="openModal('fireAlertsModal')"
+                 title="Click to manage fire alerts">
+                <div class="stat-card-top">
+                    <div class="icon-box" style="background:#fee2e2;">
+                        <i data-lucide="bell-ring" style="color:#ef4444;width:19px;height:19px;"></i>
+                    </div>
+                    <!-- Page section -->
+                    <span id="alertedUsersBadge" style="
+                        display:none;
+                        background:#fef2f2;
+                        color:#ef4444;
+                        border:1px solid #fecaca;
+                        font-size:10px;
+                        font-weight:700;
+                        padding:2px 7px;
+                        border-radius:10px;
+                        animation: livePulse 1.4s ease-in-out infinite;
+                    ">LIVE</span>
+                </div>
+                <div class="stat-value" id="statAlertedUsers"
+                     style="transition:color 0.3s ease;">0</div>
+                <div class="stat-label">Fire Alerts Sent</div>
+            </div>
+
+        </div>
+
+        <!-- TABLE SECTION -->
+        <div class="admin-content-area">
+            <div class="admin-table-card">
+
+                <!-- FILTERS BAR -->
+                <div class="admin-filters-bar">
+                    <div class="admin-filters-left">
+                        <div class="admin-search-box">
+                            <i data-lucide="search" class="admin-search-icon"></i>
+                            <input type="text" id="adminSearchInput"
+                                   placeholder="Search supervisors..."
+                                   oninput="filterAdminTable()">
+                        </div>
+                        <div class="admin-select-wrap">
+                            <select id="filterRole" onchange="filterAdminTable()" class="admin-filter-select">
+                                <option value="">All Roles</option>
+                                <option value="Super Admin">Super Admin</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Editor">Editor</option>
+                                <option value="Viewer">Viewer</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="admin-select-icon"></i>
+                        </div>
+                        <div class="admin-select-wrap">
+                            <select id="filterStatus" onchange="filterAdminTable()" class="admin-filter-select">
+                                <option value="">All Status</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Suspended">Suspended</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="admin-select-icon"></i>
+                        </div>
+                    </div>
+                    <div class="admin-filters-right">
+                        <button class="btn-add-supervisor"
+                                onclick="openModal('addSupervisorModal')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Add Supervisor
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TABLE -->
+                <div class="admin-table-wrap">
+                    <table class="admin-table" id="adminTable">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"></th>
+                                <th>Full Name</th>
+                                <th>Role</th>
+                                <th>Corridor</th>
+                                <th>Status</th>
+                                <th>Joined Date</th>
+                                <th>Last Active</th>
+                                <th>Manage</th>
+                                <th>Alerts</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTableBody">
+                            {% for s in supervisors %}
+                            <tr data-name="{{ s.full_name|lower }}"
+                                data-email="{{ s.email|lower }}"
+                                data-role="{{ s.role }}"
+                                data-status="{{ s.status }}">
+                                <td><input type="checkbox" class="row-checkbox"></td>
+                                <td>
+                                    <div class="admin-user-cell">
+                                        <div class="admin-user-avatar">{{ s.full_name[:2]|upper }}</div>
+                                        <div>
+                                            <div class="admin-user-name">{{ s.full_name }}</div>
+                                            <div class="admin-user-email">{{ s.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="admin-role-badge role-{{ s.role|lower|replace(' ', '-') }}">
+                                        {{ s.role }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="admin-corridor-badge">{{ s.corridor or 'None' }}</span>
+                                </td>
+                                <td>
+                                    <span class="admin-status-badge status-{{ s.status|lower }}">
+                                        <span class="admin-status-dot"></span>
+                                        {{ s.status }}
+                                    </span>
+                                </td>
+                                <td class="admin-cell-muted">{{ s.joined_date }}</td>
+                                <td class="admin-cell-muted">{{ s.last_active }}</td>
+                                <td>
+                                    <div class="admin-action-btns">
+                                        <button class="admin-btn-edit"
+                                                onclick="openEditModal('{{ s.id }}','{{ s.full_name }}','{{ s.email }}','{{ s.phone }}','{{ s.role }}','{{ s.status }}','{{ s.corridor }}')">
+                                            Edit
+                                        </button>
+                                        {% if s.email != 'admin' %}
+                                        <form action="/delete_supervisor/{{ s.id }}" method="POST"
+                                              style="display:inline;"
+                                              onsubmit="return confirmDelete(event, this)">
+                                            <button type="submit" class="admin-btn-delete">Delete</button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td style="text-align:center;">
+                                    <svg class="alert-bell-icon" data-id="{{ s.id }}"
+                                         data-phone="{{ s.phone }}"
+                                         data-name="{{ s.full_name }}"
+                                         viewBox="0 0 24 24" width="20" height="20"
+                                         style="fill:#94a3b8;transition:all 0.3s;cursor:pointer;"
+                                         title="Alert Status">
+                                        <path d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2zm6-6V10c0-3.07-1.63-5.64-4.5-6.32V3a1.5 1.5 0 0 0-3 0v.68C7.64 4.36 6 6.92 6 10v6l-2 2v1h16v-1l-2-2z"/>
+                                    </svg>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="9" class="admin-empty-row">
+                                    No supervisors found. Click "Add Supervisor" to get started.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- PAGINATION -->
+                <div class="admin-pagination">
+                    <div class="admin-pagination-info" id="paginationInfo">Showing all results</div>
+                    <div class="admin-pagination-controls">
+                        <span id="pageInfo">1-5 of 24</span>
+                        <button class="admin-page-btn" id="prevPage" onclick="changePage(-1)">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <button class="admin-page-btn" id="nextPage" onclick="changePage(1)">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="bottom-footer">
+            <div class="footer-left">
+                <span class="status-item">
+                    System Status:
+                    <span class="text-success" id="footerSysStatus">Operational</span>
+                </span>
+                <span class="status-item">
+                    Total Admins:
+                    <strong id="footerTotalAdmins">--</strong>
+                </span>
+                <span class="status-item">
+                    Active:
+                    <strong id="footerActiveAdmins" class="text-success">--</strong>
+                </span>
+                <!-- Page section -->
+                <span class="status-item" id="footerRoleIndicator" style="
+                    display:inline-flex;
+                    align-items:center;
+                    gap:5px;
+                    padding:2px 10px;
+                    border-radius:12px;
+                    font-size:11px;
+                    font-weight:700;
+                    background:#eff6ff;
+                    color:#1d4ed8;
+                    border:1px solid #bfdbfe;
+                    transition:all 0.3s ease;
+                ">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2.5">
+                        <rect x="3" y="11" width="18" height="11" rx="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    Admin Mode
+                </span>
+            </div>
+            <div class="footer-right">
+                <i data-lucide="clock" class="footer-icon-svg"></i>
+                <span id="footerLastUpdated">Last updated just now</span>
+            </div>
+        </footer>
+
+    </main>
+</div>
+
+<!-- ===================== ROLE MODAL ===================== -->
+<div id="roleModal" style="display:none;" class="role-lock-overlay"
+     onclick="if(event.target===this)closeRoleModal()">
+    <div class="role-modal">
+        <div class="role-modal-icon" id="roleModalIcon"></div>
+        <div class="role-modal-title" id="roleModalTitle">Role</div>
+        <div class="role-modal-desc" id="roleModalDesc">Description</div>
+        <div class="role-permission-list" id="roleModalPerms"></div>
+        <button class="role-modal-close" onclick="closeRoleModal()">Got it</button>
+    </div>
+</div>
+
+<!-- ===================== EDIT SUPERVISOR MODAL ===================== -->
+<div id="editSupervisorModal" class="admin-modal-overlay" style="display:none;"
+     onclick="if(event.target===this)closeModal('editSupervisorModal')">
+    <div class="admin-modal-box">
+        <div class="admin-modal-header">
+            <div class="admin-modal-title-row">
+                <div class="admin-modal-icon-wrap" style="background:#eff6ff;">
+                    <i data-lucide="edit-3" style="width:16px;height:16px;color:#3b82f6;"></i>
+                </div>
+                <h2 class="admin-modal-title">Edit Supervisor</h2>
+            </div>
+            <button class="admin-modal-close-btn" onclick="closeModal('editSupervisorModal')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <form id="editSupervisorForm" action="/edit_supervisor/0" method="POST"
+              class="admin-modal-form">
+            <div class="admin-form-grid">
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Full Name</label>
+                    <input type="text" name="full_name" id="edit_full_name"
+                           required class="admin-form-input">
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Email Address</label>
+                    <input type="email" name="email" id="edit_email"
+                           required class="admin-form-input">
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Phone Number</label>
+                    <input type="text" name="phone" id="edit_phone"
+                           required class="admin-form-input">
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Role</label>
+                    <div class="admin-select-wrap" style="width:100%;">
+                        <select name="role" id="edit_role" class="admin-form-input">
+                            <option value="Super Admin">Super Admin</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Editor">Editor</option>
+                            <option value="Viewer">Viewer</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="admin-select-icon"></i>
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Corridor</label>
+                    <div class="admin-select-wrap" style="width:100%;">
+                        <select name="corridor" id="edit_corridor" class="admin-form-input">
+                            <option value="None">None</option>
+                            <option value="All">All Corridors</option>
+                            <option value="A">Corridor A</option>
+                            <option value="B">Corridor B</option>
+                            <option value="C">Corridor C</option>
+                            <option value="D">Corridor D</option>
+                            <option value="E">Corridor E</option>
+                            <option value="F">Corridor F</option>
+                            <option value="G">Corridor G</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="admin-select-icon"></i>
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Status</label>
+                    <div class="admin-select-wrap" style="width:100%;">
+                        <select name="status" id="edit_status" class="admin-form-input">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Suspended">Suspended</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="admin-select-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-modal-footer">
+                <button type="button" class="admin-modal-cancel"
+                        onclick="closeModal('editSupervisorModal')">Cancel</button>
+                <button type="submit" class="admin-modal-submit">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===================== ADD SUPERVISOR MODAL ===================== -->
+<div id="addSupervisorModal" class="admin-modal-overlay" style="display:none;"
+     onclick="if(event.target===this)closeModal('addSupervisorModal')">
+    <div class="admin-modal-box">
+        <div class="admin-modal-header">
+            <div class="admin-modal-title-row">
+                <div class="admin-modal-icon-wrap" style="background:#f0fdf4;">
+                    <i data-lucide="user-plus" style="width:16px;height:16px;color:#16a34a;"></i>
+                </div>
+                <h2 class="admin-modal-title">Add New Supervisor</h2>
+            </div>
+            <button class="admin-modal-close-btn" onclick="closeModal('addSupervisorModal')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <form action="/add_supervisor" method="POST" class="admin-modal-form">
+            <div class="admin-form-grid">
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Full Name</label>
+                    <input type="text" name="full_name" required class="admin-form-input"
+                           placeholder="e.g. John Doe">
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Phone Number</label>
+                    <input type="text" name="phone" required class="admin-form-input"
+                           placeholder="05XXXXXXXX">
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Role</label>
+                    <div class="admin-select-wrap" style="width:100%;">
+                        <select name="role" class="admin-form-input">
+                            <option value="Super Admin">Super Admin</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Editor">Editor</option>
+                            <option value="Viewer">Viewer</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="admin-select-icon"></i>
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Corridor</label>
+                    <div class="admin-select-wrap" style="width:100%;">
+                        <select name="corridor" class="admin-form-input">
+                            <option value="None">None</option>
+                            <option value="All">All Corridors</option>
+                            <option value="A">Corridor A</option>
+                            <option value="B">Corridor B</option>
+                            <option value="C">Corridor C</option>
+                            <option value="D">Corridor D</option>
+                            <option value="E">Corridor E</option>
+                            <option value="F">Corridor F</option>
+                            <option value="G">Corridor G</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="admin-select-icon"></i>
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label class="admin-form-label">Status</label>
+                    <div class="admin-select-wrap" style="width:100%;">
+                        <select name="status" class="admin-form-input">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Suspended">Suspended</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="admin-select-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-modal-footer">
+                <button type="button" class="admin-modal-cancel"
+                        onclick="closeModal('addSupervisorModal')">Cancel</button>
+                <button type="submit" class="admin-modal-submit">Add Supervisor</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===================== FIRE ALERTS MODAL ===================== -->
+<div id="fireAlertsModal" class="admin-modal-overlay" style="display:none;"
+     onclick="if(event.target===this)closeModal('fireAlertsModal')">
+    <div class="admin-modal-box" style="max-width:920px;width:95%;">
+        <div class="admin-modal-header">
+            <div class="admin-modal-title-row">
+                <div class="admin-modal-icon-wrap" style="background:#fee2e2;">
+                    <i data-lucide="bell-ring" style="width:16px;height:16px;color:#ef4444;"></i>
+                </div>
+                <h2 class="admin-modal-title">Fire Alerts</h2>
+            </div>
+            <button class="admin-modal-close-btn" onclick="closeModal('fireAlertsModal')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+
+        <!-- Alert Stats -->
+        <div class="fire-alert-stats">
+            <div class="fire-alert-stat-card">
+                <div class="fire-alert-stat-value text-success" id="alertActiveCount">
+                    {{ supervisors|selectattr('status', 'equalto', 'Active')|list|length }}
+                </div>
+                <div class="fire-alert-stat-label">Active Supervisors</div>
+            </div>
+            <div class="fire-alert-stat-card">
+                <div class="fire-alert-stat-value text-danger" id="alertInactiveCount">
+                    {{ supervisors|selectattr('status', 'equalto', 'Inactive')|list|length }}
+                </div>
+                <div class="fire-alert-stat-label">Inactive</div>
+            </div>
+            <div class="fire-alert-stat-card">
+                <div class="fire-alert-stat-value" id="alertTotalCount">{{ supervisors|length }}</div>
+                <div class="fire-alert-stat-label">Total Users</div>
+            </div>
+        </div>
+
+        <!-- Alert Toolbar -->
+        <div class="fire-alert-toolbar">
+            <input type="text" id="alertSearchInput" placeholder="Search user..."
+                   oninput="filterAlertCards()" class="admin-form-input"
+                   style="max-width:200px;">
+            <div class="fire-alert-message-row">
+                <input type="text" id="bulkSmsMessage"
+                       placeholder="Write a warning message and send..."
+                       class="admin-form-input" style="flex:1;">
+                <button class="admin-modal-submit" style="white-space:nowrap;"
+                        onclick="sendBulkAlerts()">
+                    <i data-lucide="send" style="width:13px;height:13px;"></i>
+                    Send
+                </button>
+            </div>
+            <label class="admin-select-all-label">
+                <input type="checkbox" id="selectAllFireAlerts"
+                       onchange="toggleAllAlertCheckboxes(this)">
+                Select all
+            </label>
+        </div>
+
+        <!-- User Cards Grid -->
+        <div class="fire-alert-grid" id="fireAlertGrid">
+            {% for s in supervisors %}
+            <div class="fire-alert-card" id="alert-card-{{ s.id }}"
+                 data-name="{{ s.full_name|lower }}">
+                <div class="fire-alert-card-top">
+                    <div class="fire-alert-card-left">
+                        <input type="checkbox" class="alert-user-checkbox"
+                               data-id="{{ s.id }}"
+                               data-phone="{{ s.phone }}"
+                               data-name="{{ s.full_name }}"
+                               onchange="updateAlertColors()">
+                        <div class="admin-user-avatar" style="width:32px;height:32px;font-size:11px;">
+                            {{ s.full_name[:2]|upper }}
+                        </div>
+                        <div>
+                            <span class="admin-user-name" style="font-size:12.5px;">
+                                {{ s.full_name }}
+                            </span>
+                            <span class="admin-role-badge role-{{ s.role|lower|replace(' ','- ') }}"
+                                  style="font-size:9px;padding:1px 5px;">
+                                {{ s.role }}
+                            </span>
+                        </div>
+                    </div>
+                    <svg class="modal-bell-icon" data-id="{{ s.id }}"
+                         viewBox="0 0 24 24" width="18" height="18"
+                         style="fill:#94a3b8;transition:all 0.3s;flex-shrink:0;">
+                        <path d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2zm6-6V10c0-3.07-1.63-5.64-4.5-6.32V3a1.5 1.5 0 0 0-3 0v.68C7.64 4.36 6 6.92 6 10v6l-2 2v1h16v-1l-2-2z"/>
+                    </svg>
+                </div>
+                <div class="fire-alert-card-phone">
+                    {{ s.phone if s.phone else '05XXXXXXXX' }}
+                </div>
+                <div class="fire-alert-card-status">
+                    <span class="admin-status-badge status-{{ s.status|lower }}">
+                        <span class="admin-status-dot"></span>
+                        {{ s.status }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="admin-modal-footer">
+            <button class="admin-modal-cancel"
+                    onclick="closeModal('fireAlertsModal')">Close</button>
+            <button class="admin-modal-submit"
+                    onclick="submitDoneAlerts()" style="background:#ef4444;">
+                Done &amp; Send
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- FIRE ALERTS FLOATING BUTTON -->
+<button class="fire-alerts-fab" onclick="openModal('fireAlertsModal')">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+        <path d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2zm6-6V10c0-3.07-1.63-5.64-4.5-6.32V3a1.5 1.5 0 0 0-3 0v.68C7.64 4.36 6 6.92 6 10v6l-2 2v1h16v-1l-2-2z"/>
+    </svg>
+    Fire Alerts
+    <span class="fire-alerts-fab-dot"></span>
+</button>
+
+<!-- ===================== ROLE INDICATOR SCRIPT ===================== -->
+<script>
+/*
+   يحدّث مؤشر الدور في الفوتر عند تغيير الدور
+   ويحدّث شارة alertedUsersBadge
+*/
+(function () {
+    var _origApplyAdmin = null;
+
+    function patchFooterRole(role) {
+        var indicator = document.getElementById('footerRoleIndicator');
+        if (!indicator) return;
+
+        var styles = {
+            Admin:   { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe', label: 'Admin Mode'   },
+            Manager: { bg: '#fffbeb', color: '#92400e', border: '#fde68a', label: 'Manager Mode' },
+            Safety:  { bg: '#f0fdf4', color: '#166534', border: '#bbf7d0', label: 'Safety Mode'  },
+        };
+        var s = styles[role] || styles['Admin'];
+        indicator.style.background = s.bg;
+        indicator.style.color      = s.color;
+        indicator.style.border     = '1px solid ' + s.border;
+        indicator.querySelector('span') && (indicator.querySelector('span').textContent = s.label);
+        /* قراءة النص المباشر */
+        var textNode = Array.from(indicator.childNodes)
+            .find(function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+        if (!textNode) {
+            indicator.lastChild.textContent = s.label;
+        }
+        /* نعيد كتابة الـ innerHTML بالكامل */
+        indicator.innerHTML =
+            '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">' +
+            (role === 'Safety'
+                ? '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'
+                : role === 'Manager'
+                    ? '<circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/>'
+                    : '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>') +
+            '</svg> ' + s.label;
+        indicator.style.background = s.bg;
+        indicator.style.color      = s.color;
+        indicator.style.border     = '1px solid ' + s.border;
+    }
+
+    /* Patch applyAdminRolePermissions بعد تحميل الصفحة */
+    window.addEventListener('DOMContentLoaded', function () {
+        var _orig = window.applyAdminRolePermissions;
+        window.applyAdminRolePermissions = function (role) {
+            if (typeof _orig === 'function') _orig(role);
+            patchFooterRole(role);
+
+            /* تحديث شارة LIVE */
+            var badge = document.getElementById('alertedUsersBadge');
+            if (badge) {
+                var count = (window.alertedUsersSet ? window.alertedUsersSet.size : 0);
+                badge.style.display = count > 0 ? 'inline-flex' : 'none';
+            }
+        };
+    });
+
+    /* مشاهدة تغييرات عداد المُنبَّهين */
+    setInterval(function () {
+        var badge = document.getElementById('alertedUsersBadge');
+        var valEl = document.getElementById('statAlertedUsers');
+        if (!badge || !valEl) return;
+        var count = parseInt(valEl.textContent) || 0;
+        badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    }, 1000);
+})();
+</script>
+
+<script>lucide.createIcons();</script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>

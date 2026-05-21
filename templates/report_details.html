@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FREDT — Daily Fire Incident Report</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="reports-page report-details-page">
+{% set notified_by_report = notified_by_report | default({}) %}
+{% set notified = notified | default([]) %}
+{% set reports = reports | default([]) %}
+
+<div id="toastContainer"></div>
+
+<div class="app-container">
+
+    <!-- ═══════════ SIDEBAR ═══════════ -->
+    <aside class="sidebar sidebar--sticky">
+        <div class="logo">
+            <div class="logo-box">
+                <i data-lucide="flame" class="logo-icon-svg"></i>
+            </div>
+            <h1>FREDT</h1>
+        </div>
+
+        <div class="user-card">
+            <div class="user-left">
+                <div class="avatar" id="sidebarAvatar">--</div>
+                <div class="user-info">
+                    <h3 id="sidebarUsername">Loading...</h3>
+                    <p id="sidebarRole">-</p>
+                </div>
+            </div>
+            <i data-lucide="settings" class="settings-icon-svg"></i>
+        </div>
+
+        <!-- MAIN NAV -->
+        <div class="nav">
+            <a href="/" class="nav-item">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/admin" class="nav-item">
+                <i data-lucide="shield"></i>
+                <span>Admin Management</span>
+            </a>
+        </div>
+
+        <div class="nav-section-title">ANALYTICS</div>
+        <div class="nav">
+            <a href="/reports" class="nav-item active">
+                <i data-lucide="file-text"></i>
+                <span>Reports</span>
+            </a>
+        </div>
+
+        <div class="nav-section-title nav-section-title--account">ACCOUNT</div>
+        <div class="nav">
+            <a href="/logout" class="nav-item nav-item--logout">
+                <i data-lucide="log-out"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- ═══════════ MAIN ═══════════ -->
+    <main class="main-content main-content--reports">
+
+        <!-- TOP HEADER -->
+        <header class="top-header top-header--sticky">
+            <div class="breadcrumbs">
+                <a href="/" class="bc-link">FREDT</a>
+                <span>&rsaquo;</span>
+                <a href="/reports" class="bc-link">Incident Reports</a>
+                <span>&rsaquo;</span>
+                <strong id="bcDate">{{ date }}</strong>
+            </div>
+
+            <div class="header-actions">
+                <div class="role-tabs" id="roleTabs">
+                    <button class="role-tab det-role-tab active" onclick="switchDetailRole(this)">Admin</button>
+                    <button class="role-tab det-role-tab" onclick="switchDetailRole(this)">Manager</button>
+                    <button class="role-tab det-role-tab" onclick="switchDetailRole(this)">Safety</button>
+                </div>
+
+                <button class="det-btn-outline" id="btnPrintDetail" onclick="printDetail()">
+                    <i data-lucide="printer" style="width:14px;height:14px;"></i> Print
+                </button>
+                <button class="det-btn-outline" id="btnExportDetail" onclick="exportDetailCSV()">
+                    <i data-lucide="download" style="width:14px;height:14px;"></i> Export
+                </button>
+                <div class="notification-wrapper">
+                    <button class="notif-btn" id="notifBtn" onclick="toggleNotifications()" title="Notifications">
+                        <i data-lucide="bell"></i>
+                        <span class="notif-badge" id="notificationBadge" style="display:none;">0</span>
+                    </button>
+                    <div class="notification-panel" id="notificationPanel">
+                        <div class="panel-header">
+                            <span>Notifications</span>
+                            <span class="notification-count" id="notificationCount">0 New</span>
+                        </div>
+                        <div id="notificationList" style="padding:10px 14px; font-size:13px; color:var(--text-muted);">No new notifications.</div>
+                    </div>
+                </div>
+
+                <div class="profile-wrapper">
+                    <div class="small-avatar" id="headerAvatar" onclick="toggleProfileDropdown()" title="Profile">--</div>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <div class="profile-dropdown-header">
+                            <div class="profile-dropdown-avatar" id="dropdownAvatar">--</div>
+                            <div>
+                                <div class="profile-dropdown-name" id="dropdownFullName">Loading...</div>
+                                <div class="profile-dropdown-role">
+                                    <span id="dropdownRoleText">-</span>
+                                    <span class="role-badge-pill" id="dropdownRoleBadge">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="permissions-banner admin" id="permissionsBanner">Full access: all supervisors, alarms, reports &amp; settings</div>
+                        <hr class="profile-divider">
+                        <div class="profile-dropdown-section-title">ACCOUNT</div>
+                        <div class="profile-dropdown-item" onclick="closeProfileDropdown()"><i data-lucide="user" class="item-icon-svg"></i> My Profile</div>
+                        <div class="profile-dropdown-item" onclick="closeProfileDropdown()"><i data-lucide="settings" class="item-icon-svg"></i> Settings</div>
+                        <hr class="profile-divider">
+                        <div class="profile-dropdown-item danger" onclick="window.location='/logout'"><i data-lucide="log-out" class="item-icon-svg"></i> Logout</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- PAGE BODY -->
+        <div class="rpt-page">
+
+            <!-- TITLE ROW -->
+            <div class="det-title-row">
+                <div>
+                    <div class="reports-eyebrow">ANALYTICS &rsaquo; REPORTS</div>
+                    <div class="det-main-title">
+                        <span class="det-fire-badge">
+                            <i data-lucide="flame" style="width:13px;height:13px;"></i>
+                            <span id="titleDate">{{ date }}</span>
+                        </span>
+                        Daily Fire Incident Report
+                    </div>
+                </div>
+                <div class="det-status-chip">
+                    <span class="chip-dot chip-green"></span>
+                    All Incidents Resolved
+                </div>
+            </div>
+
+            <!-- SUMMARY STRIP -->
+            <div class="summary-strip">
+                <div class="strip-card">
+                    <div class="sc-icon-wrap sc-icon-blue"><i data-lucide="calendar"></i></div>
+                    <div class="sc-value" id="statDate">{{ date }}</div>
+                    <div class="sc-label">Incident Date</div>
+                </div>
+                <div class="strip-card">
+                    <div class="sc-icon-wrap sc-icon-fire"><i data-lucide="flame"></i></div>
+                    <div class="sc-value" id="statFires">0</div>
+                    <div class="sc-label">Total Fires</div>
+                </div>
+                <div class="strip-card">
+                    <div class="sc-icon-wrap sc-icon-safe"><i data-lucide="door-open"></i></div>
+                    <div class="sc-value" id="statExits">0</div>
+                    <div class="sc-label">Exits Used</div>
+                </div>
+                <div class="strip-card">
+                    <div class="sc-icon-wrap sc-icon-purple"><i data-lucide="users"></i></div>
+                    <div class="sc-value" id="totalPeopleStat">0</div>
+                    <div class="sc-label">Max People (Building)</div>
+                </div>
+                <div class="strip-card">
+                    <div class="sc-icon-wrap sc-icon-warn"><i data-lucide="message-square"></i></div>
+                    <div class="sc-value" id="statNotified">0</div>
+                    <div class="sc-label">Supervisors Notified</div>
+                </div>
+            </div>
+
+
+
+            <!-- CHARTS ROW -->
+            <div class="chart-grid">
+                <div class="det-card" style="margin:0;">
+                    <div class="det-card-title">
+                        <div class="det-card-icon-wrap ic-info"><i data-lucide="activity"></i></div>
+                        Incident &amp; Occupancy Progression
+                        <span class="det-card-hint">Derived from report records</span>
+                    </div>
+                    <div class="chart-wrap"><canvas id="tempChart"></canvas></div>
+                </div>
+                <div class="det-card" style="margin:0;" id="heatmapCard">
+                    <div class="det-card-title">
+                        <div class="det-card-icon-wrap ic-warn"><i data-lucide="map"></i></div>
+                        Corridor Danger Heatmap
+                        <span class="det-card-hint">Derived from incident corridors</span>
+                    </div>
+                    <div class="heatmap-wrap"><canvas id="heatmapChart"></canvas></div>
+                    <div class="heatmap-legend">
+                        <span class="legend-item"><span class="legend-dot ld-red"></span> High Risk</span>
+                        <span class="legend-item"><span class="legend-dot ld-warn"></span> Medium Risk</span>
+                        <span class="legend-item"><span class="legend-dot ld-safe"></span> Safe</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN TWO-COL -->
+            <div class="main-two-col">
+
+                <!-- LEFT: Fire Incidents + Notifications -->
+                <div style="display:flex; flex-direction:column; gap:20px; min-width:0;">
+
+                    <!-- Fire Incidents Card -->
+                    <div class="det-card" style="margin:0;">
+                        <div class="det-card-title">
+                            <div class="det-card-icon-wrap ic-fire"><i data-lucide="flame"></i></div>
+                            All Fire Incidents — <span id="incidentsDateLabel">{{ date }}</span>
+                            <span class="det-card-hint">Click an incident to expand details</span>
+                        </div>
+                        <div id="fireIncidents" style="padding-bottom:8px;"></div>
+                    </div>
+
+                    <!-- SMS Notifications Card -->
+                    <div class="det-card" style="margin:0; position:relative; overflow:auto;" id="notifCard">
+                        <div class="det-card-title">
+                            <div class="det-card-icon-wrap ic-warn"><i data-lucide="message-square"></i></div>
+                            SMS Notifications Sent
+                            <span class="det-card-hint" id="notifHint">0 supervisor(s) alerted</span>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table class="notif-table" id="notifTable">
+                                <thead>
+                                    <tr>
+                                        <th>Supervisor</th>
+                                        <th>Role</th>
+                                        <th>Assigned Corridor</th>
+                                        <th>Phone</th>
+                                        <th>Triggered By</th>
+                                        <th>SMS Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="smsNotificationsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RIGHT: AI + Bottlenecks + Timeline -->
+                <div class="side-col">
+
+                    <!-- AI Analysis -->
+                    <div class="side-panel ai-panel">
+                        <div class="side-panel-header">
+                            <i data-lucide="cpu" style="color:var(--info);"></i>
+                            AI Live Analysis
+                        </div>
+                        <div class="side-panel-body">
+                            <div style="font-size:12px;color:#9ca3af;margin-bottom:6px;">Confidence Score: <strong style="color:white;" id="aiConf">--</strong></div>
+                            <div class="ai-conf-bar-track"><div class="ai-conf-bar-fill" id="aiConfFill"></div></div>
+                            <div id="aiInsightList"></div>
+                        </div>
+                    </div>
+
+                    <!-- Bottlenecks -->
+                    <div class="side-panel">
+                        <div class="side-panel-header">
+                            <i data-lucide="alert-triangle" style="color:var(--danger);"></i>
+                            Detected Risk Corridors
+                        </div>
+                        <div class="side-panel-body" id="bottleneckList"></div>
+                    </div>
+
+                    <!-- Incident Timeline -->
+                    <div class="side-panel">
+                        <div class="side-panel-header">
+                            <i data-lucide="clock" style="color:var(--text-muted);"></i>
+                            Incident Timeline
+                        </div>
+                        <div class="side-panel-body" id="timelineList"></div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div><!-- /rpt-page -->
+
+        <!-- FOOTER -->
+        <footer class="bottom-footer">
+            <div class="footer-left">
+                <span class="status-item">System Status: <span class="text-success">Operational</span></span>
+                <span class="status-item">Report Date: <strong id="footerDate">{{ date }}</strong></span>
+                <span class="status-item">Incidents: <strong id="footerIncidents">0</strong></span>
+                <span class="rpt-footer-badge badge-admin" id="detFooterRoleBadge">Admin Mode</span>
+            </div>
+            <div class="footer-right">
+                <i data-lucide="clock" style="width:13px;height:13px;"></i>
+                <span id="footerLastUpdated">Last updated just now</span>
+            </div>
+        </footer>
+
+    </main>
+</div>
+
+
+<!-- ===================== ROLE MODAL ===================== -->
+<div id="roleModal" style="display:none;" class="role-lock-overlay"
+     onclick="if(event.target===this)closeRoleModal()">
+    <div class="role-modal">
+        <div class="role-modal-icon" id="roleModalIcon"></div>
+        <div class="role-modal-title" id="roleModalTitle">Role</div>
+        <div class="role-modal-desc" id="roleModalDesc">Description</div>
+        <div class="role-permission-list" id="roleModalPerms"></div>
+        <button class="role-modal-close" onclick="closeRoleModal()">Got it</button>
+    </div>
+</div>
+
+<!-- DATA BRIDGE -->
+<script>
+var REPORT_DATE = {{ date | tojson }};
+var REPORTS_DATA = {{ reports | default([]) | tojson | safe }};
+var NOTIFIED_DATA = {{ notified | default([]) | tojson | safe }};
+var NOTIFIED_BY_REPORT_DATA = {{ notified_by_report | default({}) | tojson | safe }};
+</script>
+
+<script src="{{ url_for('static', filename='js/report_details.js') }}"></script>
+
+</body>
+</html>

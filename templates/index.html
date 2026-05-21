@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FREDT - Dashboard</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+
+<!-- Toast Container -->
+<div id="toastContainer"></div>
+
+<div class="app-container">
+
+    <!-- =====================
+         SIDEBAR
+    ===================== -->
+    <aside class="sidebar">
+
+        <!-- الشعار -->
+        <div class="logo">
+            <div class="logo-box">
+                <i data-lucide="flame" class="logo-icon-svg"></i>
+            </div>
+            <h1>FREDT</h1>
+        </div>
+
+        <!-- بطاقة المستخدم -->
+        <div class="user-card">
+            <div class="user-left">
+                <div class="avatar" id="sidebarAvatar">--</div>
+                <div class="user-info">
+                    <h3 id="sidebarUsername"> </h3>
+                    <p id="sidebarRole">-</p>
+                </div>
+            </div>
+            <i data-lucide="settings" class="settings-icon-svg"></i>
+        </div>
+
+        <!-- قائمة التنقل الرئيسية -->
+        <div class="nav">
+            <a href="/"      class="nav-item active">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/admin" class="nav-item">
+                <i data-lucide="shield"></i>
+                <span>Admin Management</span>
+            </a>
+        </div>
+
+        <!-- قسم التحليلات -->
+        <div class="nav-section-title">ANALYTICS</div>
+
+        <div class="nav">
+            <a href="/reports" class="nav-item">
+                <i data-lucide="file-text"></i>
+                <span>Reports</span>
+            </a>
+
+        </div>
+
+        <!-- قسم الحساب -->
+        <div class="nav-section-title nav-section-title--account">ACCOUNT</div>
+
+        <div class="nav">
+            <a href="/logout" class="nav-item nav-item--logout">
+                <i data-lucide="log-out"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+
+    </aside>
+
+    <!-- =====================
+         MAIN CONTENT
+    ===================== -->
+    <main class="main-content">
+
+        <!-- الهيدر العلوي -->
+        <header class="top-header">
+            <div class="header-left">
+                <div class="breadcrumbs">
+                    <span>FREDT ›</span> <strong>Dashboard</strong>
+                </div>
+            </div>
+            <div class="header-right">
+
+                <!-- تبويبات الأدوار -->
+                <div class="role-tabs" id="roleTabs">
+                    <span class="role-tab active" onclick="switchRole(this)">Admin</span>
+                    <span class="role-tab"        onclick="switchRole(this)">Manager</span>
+                    <span class="role-tab"        onclick="switchRole(this)">Safety</span>
+                </div>
+
+                <!-- مفتاح وضع الطوارئ -->
+                <div class="emergency-toggle">
+                    <span class="toggle-label">Emergency Mode</span>
+                    <label class="switch">
+                        <input type="checkbox" id="emergencySwitch" onchange="toggleEmergencyMode(this)">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div class="header-actions">
+
+                    <!-- زر الإشعارات -->
+                    <div class="notification-wrapper">
+                        <button class="notif-btn" onclick="toggleNotifications()" title="Notifications">
+                            <i data-lucide="bell"></i>
+                            <span class="notif-badge" id="notificationBadge">0</span>
+                        </button>
+
+                        <div class="notification-panel" id="notificationPanel">
+                            <div class="panel-header">
+                                <span>Notifications</span>
+                                <span class="notification-count" id="notificationCount">0 New</span>
+                            </div>
+                            <div id="notificationList"></div>
+                        </div>
+                    </div>
+
+                    <!-- الأفاتار + قائمة الملف الشخصي -->
+                    <div class="profile-wrapper">
+                        <div class="small-avatar"
+                             id="headerAvatar"
+                             onclick="toggleProfileDropdown()"
+                             title="Profile">
+                            --
+                        </div>
+
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-avatar" id="dropdownAvatar">--</div>
+                                <div>
+                                    <div class="profile-dropdown-name" id="dropdownFullName">Loading...</div>
+                                    <div class="profile-dropdown-role">
+                                        <span id="dropdownRoleText">-</span>
+                                        <span class="role-badge-pill" id="dropdownRoleBadge">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="permissions-banner admin" id="permissionsBanner">
+                                Full access: all simulators, alarms, reports &amp; settings
+                            </div>
+
+                            <hr class="profile-divider">
+
+                            <div class="profile-dropdown-section-title">ACCOUNT</div>
+
+                            <div class="profile-dropdown-item" onclick="closeProfileDropdown()">
+                                <i data-lucide="user" class="item-icon-svg"></i>
+                                My Profile
+                            </div>
+
+                            <div class="profile-dropdown-item" onclick="closeProfileDropdown()">
+                                <i data-lucide="settings" class="item-icon-svg"></i>
+                                Settings
+                            </div>
+
+                            <div class="profile-dropdown-item" onclick="closeProfileDropdown()">
+                                <i data-lucide="bell" class="item-icon-svg"></i>
+                                Notifications
+                            </div>
+
+                            <hr class="profile-divider">
+
+                            <div class="profile-dropdown-item danger" onclick="window.location='/logout'">
+                                <i data-lucide="log-out" class="item-icon-svg"></i>
+                                Logout
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+
+        <!-- =====================
+             صف الكروت الإحصائية
+        ===================== -->
+        <div class="stats-row">
+
+            <!-- كارت 1: مستوى الخطورة -->
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <div class="icon-box red-bg">
+                        <i data-lucide="flame" class="icon-red"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="globalStatus">Safe</div>
+                <div class="stat-label">Severity Level</div>
+            </div>
+
+            <!-- كارت 2: ممرات الحريق -->
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <div class="icon-box yellow-bg">
+                        <i data-lucide="alert-triangle" class="icon-yellow"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="fireCorridors">None</div>
+                <div class="stat-label">Fire Corridors</div>
+            </div>
+
+            <!-- كارت 3: الممرات المكتظة -->
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <div class="icon-box yellow-bg">
+                        <i data-lucide="users" class="icon-yellow"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="crowdCount">None</div>
+                <div class="stat-label">Crowded Corridors</div>
+            </div>
+
+            <!-- كارت 4: إجمالي الأشخاص -->
+            <div class="stat-card">
+                <div class="stat-card-top">
+                    <div class="icon-box blue-bg">
+                        <i data-lucide="user" class="icon-blue"></i>
+                    </div>
+                </div>
+                <div class="stat-value" id="totalPeople">0</div>
+                <div class="stat-label">Total People</div>
+            </div>
+
+            <!-- كارت 5: تنبيهات الحريق النشطة -->
+            <div class="stat-card active-border">
+                <div class="stat-card-top">
+                    <div class="icon-box red-bg">
+                        <i data-lucide="bell" class="icon-red"></i>
+                    </div>
+                    <span class="badge red-badge">Active</span>
+                </div>
+                <div class="stat-value" id="activeAlertsCount">0</div>
+                <div class="stat-label">Active Fire Alerts</div>
+            </div>
+
+        </div>
+
+        <!-- =====================
+             منطقة المحتوى الرئيسي
+        ===================== -->
+        <div class="content-area">
+
+            <!-- قسم الخريطة -->
+            <div class="map-section">
+                <div class="section-header">
+                    <div class="section-title">
+                        Live Evacuation Grid
+                        <span class="live-badge">
+                            <span class="live-dot"></span> Live
+                        </span>
+                    </div>
+                    <div class="map-controls">
+                        <button class="map-ctrl-btn" onclick="zoomMap(-10)" title="Zoom Out">-</button>
+                        <span class="map-ctrl-zoom-label" id="zoomLabel">100%</span>
+                        <button class="map-ctrl-btn" onclick="zoomMap(+10)" title="Zoom In">+</button>
+                        <div class="map-ctrl-divider"></div>
+                        <button class="map-ctrl-btn map-ctrl-btn--fit" onclick="resetZoom()" title="Fit to screen">
+                            <i data-lucide="scan"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="map-container">
+                    <svg id="map" width="100%" height="100%"></svg>
+                </div>
+            </div>
+
+            <!-- لوحة الرؤى الحية -->
+            <aside class="insights-panel">
+                <h3>Live Insights Panel</h3>
+
+                <!-- المنطقة المحددة -->
+                <div class="insight-section">
+                    <div class="section-label">SELECTED ZONE</div>
+                    <div class="selected-zone-card" id="cellInfo">
+                        <div class="zone-header">
+                            <span class="zone-name"  id="zoneNameLabel">-</span>
+                            <span class="zone-badge" id="zoneBadgeLabel">-</span>
+                        </div>
+                                                
+                    </div>
+                </div>
+
+                <!-- الحرائق النشطة -->
+                <div class="insight-section">
+                    <div class="section-label">ACTIVE FIRES</div>
+                    <div class="fire-list-container" id="fireList">No active fires</div>
+                </div>
+
+                <!-- مفتاح الألوان -->
+                <div class="insight-section">
+                    <div class="section-label">LEGEND</div>
+                    <div class="legend-grid">
+                        <div class="legend-item"><span class="color-box bg-fire"></span> Fire</div>
+                        <div class="legend-item"><span class="color-box bg-wall"></span> Wall</div>
+                        <div class="legend-item"><span class="color-box bg-congested"></span> Congested Corridor</div>
+                        <div class="legend-item"><span class="color-box bg-warning"></span> Warning (Shop)</div>
+                        <div class="legend-item"><span class="color-box bg-path"></span> Best Evacuation Path</div>
+                        <div class="legend-item"><span class="color-box bg-exit"></span> Exit</div>
+                        <div class="legend-item"><span class="color-box bg-tracking"></span> Normal Corridor</div>
+                        <div class="legend-item"><span class="color-box bg-crowd"></span> Crowd</div>
+                    </div>
+                </div>
+
+                <!-- الإجراءات السريعة -->
+                <div class="insight-section">
+                    <div class="section-label">QUICK ACTIONS</div>
+                    <div class="action-buttons">
+                        <button class="btn btn-danger"    id="alarmBtn" onclick="triggerAlarm()">
+                            <i data-lucide="siren" class="btn-icon-svg"></i>
+                            Trigger Alarm
+                        </button>
+                        <button class="btn btn-secondary" id="lockBtn"  onclick="toggleLock(this)">
+                            <i data-lucide="lock" class="btn-icon-svg"></i>
+                            Lock Corridor
+                        </button>
+                        <button class="btn btn-secondary" id="alertBtn" onclick="sendAlert()">
+                            <i data-lucide="send" class="btn-icon-svg"></i>
+                            Send Alert
+                        </button>
+                    </div>
+                </div>
+
+                <!-- محاكي الحريق -->
+                <div class="insight-section actions-section admin-only">
+                    <div class="section-label">FIRE SIMULATOR</div>
+                    <div class="sim-box">
+
+                        <div class="sim-time-header">
+                            <span class="sim-time-label">Current Time:</span>
+                            <span id="simTimeDisplay" class="sim-time-value">0.0s</span>
+                        </div>
+
+                        <select id="simShop" class="sim-select">
+                            <option value="">Select a shop...</option>
+                            {% for (r, c), name in shops.items() %}
+                            <option value="{{ r }},{{ c }}">{{ name }} ({{ r }},{{ c }})</option>
+                            {% endfor %}
+                        </select>
+
+                        <div class="sim-row">
+                            <input type="number" id="simStart" placeholder="Start (s)" class="sim-input" min="0" step="0.1" required>
+                            <input type="number" id="simEnd"   placeholder="End (s)"   class="sim-input" min="0" step="0.1" required>
+                        </div>
+
+                        <button class="btn btn-secondary sim-add-btn" onclick="addSimFire()">+ Add Fire Event</button>
+                        <div id="simFireList" class="sim-event-list"></div>
+
+                        <div class="sim-btn-row">
+                            <button class="btn btn-danger sim-start-btn" onclick="startSim()">
+                                <i data-lucide="play" class="btn-icon-svg"></i> Start
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearSim()">Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- محاكي الازدحام -->
+                <div class="insight-section actions-section admin-only">
+                    <div class="section-label">CONGESTION SIMULATOR</div>
+                    <div class="sim-box">
+
+                        <select id="simCorridor" class="sim-select">
+                            <option value="">Select Corridor...</option>
+                            <option value="Corridor A">Corridor A</option>
+                            <option value="Corridor B">Corridor B</option>
+                            <option value="Corridor C">Corridor C</option>
+                            <option value="Corridor D">Corridor D</option>
+                            <option value="Corridor E">Corridor E</option>
+                            <option value="Corridor F">Corridor F</option>
+                            <option value="Corridor G">Corridor G</option>
+                        </select>
+
+                        <input type="number" id="simPeople" placeholder="People Count (e.g. 50+ blocks)"
+                               class="sim-input sim-input--full" min="1" step="1" required>
+
+                        <div class="sim-row">
+                            <input type="number" id="simCongStart" placeholder="Start (s)" class="sim-input" min="0" step="0.1" required>
+                            <input type="number" id="simCongEnd"   placeholder="End (s)"   class="sim-input" min="0" step="0.1" required>
+                        </div>
+
+                        <button class="btn btn-secondary sim-add-btn" onclick="addSimCongestion()">+ Add Crowd Event</button>
+                        <div id="simCongestionList" class="sim-event-list"></div>
+
+                        <div class="sim-btn-row">
+                            
+                            <button class="btn btn-secondary" onclick="clearSimCongestion()">Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+            </aside>
+
+        </div><!-- end .content-area -->
+
+        <!-- الفوتر السفلي -->
+        <footer class="bottom-footer">
+            <div class="footer-left">
+                <span class="status-item">System Status: <span class="text-success" id="footerSysStatus"></span></span>
+                <span class="status-item">Fire Detected: <span class="text-danger"  id="footerFireDetected"></span></span>
+                <span class="status-item">Total People: <strong id="footerTotalPeople">0</strong></span>
+            </div>
+            <div class="footer-right">
+                <i data-lucide="clock" class="footer-icon-svg"></i>
+                <span class="last-updated">Last updated 2s ago</span>
+            </div>
+        </footer>
+
+    </main>
+</div><!-- end .app-container -->
+
+<!-- مودال الأدوار -->
+<div id="roleModal" style="display:none;" class="role-lock-overlay" onclick="if(event.target===this)closeRoleModal()">
+    <div class="role-modal">
+        <div class="role-modal-icon" id="roleModalIcon">
+            <i data-lucide="user" style="width:38px;height:38px;color:#6b7280;"></i>
+        </div>
+        <div class="role-modal-title" id="roleModalTitle">Role</div>
+        <div class="role-modal-desc"  id="roleModalDesc">Description</div>
+        <div class="role-permission-list" id="roleModalPerms"></div>
+        <button class="role-modal-close" onclick="closeRoleModal()">Got it</button>
+    </div>
+</div>
+
+<audio id="alarm" src="/static/audio/alarm.wav" preload="auto"></audio>
+
+<script>lucide.createIcons();</script>
+<script src="/static/js/main.js"></script>
+<script src="/static/js/script.js"></script>
+</body>
+</html>

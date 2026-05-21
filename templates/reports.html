@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FREDT - Incident Reports</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div id="toastContainer"></div>
+
+<!-- Compatibility fix -->
+<div class="app-container" style="display:flex;min-height:100vh;height:auto;">
+
+    <!-- SIDEBAR — sticky -->
+    <aside class="sidebar" style="
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        flex-shrink: 0;
+        overflow-y: auto;
+    ">
+        <div class="logo">
+            <div class="logo-box">
+                <i data-lucide="flame" class="logo-icon-svg"></i>
+            </div>
+            <h1>FREDT</h1>
+        </div>
+        <div class="user-card">
+            <div class="user-left">
+                <div class="avatar" id="sidebarAvatar">--</div>
+                <div class="user-info">
+                    <h3 id="sidebarUsername"></h3>
+                    <p id="sidebarRole">-</p>
+                </div>
+            </div>
+            <i data-lucide="settings" class="settings-icon-svg"></i>
+        </div>
+        <div class="nav">
+            <a href="/" class="nav-item">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/admin" class="nav-item">
+                <i data-lucide="shield"></i>
+                <span>Admin Management</span>
+            </a>
+        </div>
+        <div class="nav-section-title">ANALYTICS</div>
+        <div class="nav">
+            <a href="/reports" class="nav-item active">
+                <i data-lucide="file-text"></i>
+                <span>Reports</span>
+            </a>
+        </div>
+        <div class="nav-section-title nav-section-title--account">ACCOUNT</div>
+        <div class="nav">
+            <a href="/logout" class="nav-item nav-item--logout">
+                <i data-lucide="log-out"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content" style="
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        overflow-x: hidden;
+        height: auto;
+        min-height: 100vh;
+    ">
+
+        <!-- TOP HEADER — sticky -->
+        <header class="top-header" style="
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            flex-shrink: 0;
+        ">
+            <div class="header-left">
+                <div class="breadcrumbs">
+                    <a href="/" class="bc-link">FREDT</a>
+                    <span>&rsaquo;</span>
+                    <strong>Incident Reports</strong>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="role-tabs" id="roleTabs">
+                    <span class="role-tab active" onclick="switchRole(this)">Admin</span>
+                    <span class="role-tab" onclick="switchRole(this)">Manager</span>
+                    <span class="role-tab" onclick="switchRole(this)">Safety</span>
+                </div>
+                <div class="header-actions">
+                    <div class="notification-wrapper">
+                        <button class="notif-btn" onclick="toggleNotifications()" title="Notifications">
+                            <i data-lucide="bell"></i>
+                            <span class="notif-badge" id="notificationBadge" style="display:none;">0</span>
+                        </button>
+                        <div class="notification-panel" id="notificationPanel">
+                            <div class="panel-header">
+                                <span>Notifications</span>
+                                <span class="notification-count" id="notificationCount">0 New</span>
+                            </div>
+                            <div id="notificationList"></div>
+                        </div>
+                    </div>
+                    <div class="profile-wrapper">
+                        <div class="small-avatar" id="headerAvatar" onclick="toggleProfileDropdown()" title="Profile">--</div>
+                        <div class="profile-dropdown" id="profileDropdown">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-avatar" id="dropdownAvatar">--</div>
+                                <div>
+                                    <div class="profile-dropdown-name" id="dropdownFullName">Loading...</div>
+                                    <div class="profile-dropdown-role">
+                                        <span id="dropdownRoleText">-</span>
+                                        <span class="role-badge-pill" id="dropdownRoleBadge">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="permissions-banner admin" id="rptPermissionsBanner">
+                                Full access: all supervisors, alarms, reports &amp; settings
+                            </div>
+                            <hr class="profile-divider">
+                            <div class="profile-dropdown-section-title">ACCOUNT</div>
+                            <div class="profile-dropdown-item" onclick="closeProfileDropdown()">
+                                <i data-lucide="user" class="item-icon-svg"></i> My Profile
+                            </div>
+                            <div class="profile-dropdown-item" onclick="closeProfileDropdown()">
+                                <i data-lucide="settings" class="item-icon-svg"></i> Settings
+                            </div>
+                            <hr class="profile-divider">
+                            <div class="profile-dropdown-item danger" onclick="window.location='/logout'">
+                                <i data-lucide="log-out" class="item-icon-svg"></i> Logout
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- PAGE CONTENT -->
+        <div class="rpt-page" style="flex:1;">
+
+            <!-- Header -->
+            <div class="rpt-header">
+                <h1>Reports</h1>
+                <p>Incident and system performance reports</p>
+            </div>
+
+            <!-- =====================================================
+                 FILTER BAR
+                 ===================================================== -->
+            <div class="admin-table-card" style="margin-bottom:20px;">
+                <div class="admin-filters-bar">
+
+                    <!-- Left: Search + Selects -->
+                    <div class="admin-filters-left">
+
+                        <!-- Search -->
+                        <div class="admin-search-box">
+                            <i data-lucide="search" class="admin-search-icon"></i>
+                            <input type="text" id="dateSearch"
+                                   placeholder="Search reports..."
+                                   oninput="filterTable()">
+                        </div>
+
+                        <!-- Date Range -->
+                        <div class="admin-select-wrap" id="dateRangeWrap" style="position:relative;">
+                            <button class="admin-filter-select"
+                                    id="btnDateRange"
+                                    onclick="toggleDatePicker()"
+                                    style="cursor:pointer;display:flex;align-items:center;gap:6px;
+                                           padding-right:30px;background:var(--bg);white-space:nowrap;">
+                                <i data-lucide="calendar" style="width:14px;height:14px;color:var(--text-muted);flex-shrink:0;"></i>
+                                <span id="dateRangeLabel">Date Range</span>
+                            </button>
+                            <i data-lucide="chevron-down" class="admin-select-icon"></i>
+                        </div>
+
+                        <!-- Fire simulation and alert logic -->
+                        <div class="admin-select-wrap">
+                            <select id="buildingFilter" class="admin-filter-select" onchange="filterTable()">
+                                <option value="">All Corridors</option>
+                                <option value="None">No Corridor</option>
+                                <option value="A">Corridor A</option>
+                                <option value="B">Corridor B</option>
+                                <option value="C">Corridor C</option>
+                                <option value="D">Corridor D</option>
+                                <option value="E">Corridor E</option>
+                                <option value="F">Corridor F</option>
+                                <option value="G">Corridor G</option>
+                            </select>
+                            <i data-lucide="map-pin" class="admin-select-icon"></i>
+                        </div>
+
+                        <!-- Severity filter -->
+                        <div class="admin-select-wrap">
+                            <select id="severityFilter" class="admin-filter-select" onchange="filterTable()">
+                                <option value="">All Severities</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                            <i data-lucide="chevron-down" class="admin-select-icon"></i>
+                        </div>
+
+                    </div>
+
+                    <!-- Right: Export CSV -->
+                    <div class="admin-filters-right">
+                        <button id="btnExportCSV" class="btn-add-supervisor" onclick="exportCSV()"
+                                style="background:#5f8f84;">
+                            <i data-lucide="download" style="width:14px;height:14px;"></i>
+                            Export CSV
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Page section -->
+            <div id="datePickerOverlay"
+                 style="display:none;position:fixed;inset:0;z-index:298;"
+                 onclick="closeDatePicker()"></div>
+
+            <div class="rpt-date-picker-panel" id="datePicker"
+                 style="display:none;position:fixed;z-index:299;
+                        top:0;left:0;
+                        background:#fff;border:1px solid var(--border);
+                        border-radius:14px;padding:16px;
+                        box-shadow:0 8px 32px rgba(0,0,0,.14);
+                        min-width:290px;">
+                <div class="rpt-date-picker-row">
+                    <div class="rpt-date-field">
+                        <label>From</label>
+                        <input type="date" id="dateFrom" onchange="applyDateRange()">
+                    </div>
+                    <div class="rpt-date-field">
+                        <label>To</label>
+                        <input type="date" id="dateTo" onchange="applyDateRange()">
+                    </div>
+                </div>
+                <div class="rpt-date-presets">
+                    <button onclick="setPresetRange(7)">Last 7 days</button>
+                    <button onclick="setPresetRange(30)">Last 30 days</button>
+                    <button onclick="setPresetRange(90)">Last 90 days</button>
+                    <button onclick="clearDateRange()">Clear</button>
+                </div>
+            </div>
+
+            <!-- OVERVIEW STAT CARDS -->
+            <div class="rpt-overview-grid">
+                <div class="rpt-stat-card">
+                    <div class="rpt-stat-icon blue">
+                        <i data-lucide="file-text"></i>
+                    </div>
+                    <div class="rpt-stat-label">Total Incidents</div>
+                    <div class="rpt-stat-value" id="statTotalFires">
+                        {% set total = namespace(n=0) %}
+                        {% for d in days %}{% set total.n = total.n + d.fire_count %}{% endfor %}
+                        {{ total.n }}
+                    </div>
+                </div>
+                <div class="rpt-stat-card">
+                    <div class="rpt-stat-icon red">
+                        <i data-lucide="alert-triangle"></i>
+                    </div>
+                    <div class="rpt-stat-label">Fire Alarms</div>
+                    <div class="rpt-stat-value" id="statTotalDays">{{ days | length }}</div>
+                </div>
+                <div class="rpt-stat-card">
+                    <div class="rpt-stat-icon amber">
+                        <i data-lucide="bell"></i>
+                    </div>
+                    <div class="rpt-stat-label">Avg Fires / Day</div>
+                    <div class="rpt-stat-value" id="statAvgFires">
+                        {% if days | length > 0 %}
+                            {% set total2 = namespace(n=0) %}
+                            {% for d in days %}{% set total2.n = total2.n + d.fire_count %}{% endfor %}
+                            {{ (total2.n / days | length) | round(1) }}
+                        {% else %}0{% endif %}
+                    </div>
+                </div>
+                <div class="rpt-stat-card">
+                    <div class="rpt-stat-icon green">
+                        <i data-lucide="users"></i>
+                    </div>
+                    <div class="rpt-stat-label">Evacuation Events</div>
+                    <div class="rpt-stat-value" id="statEvacuationEvents">
+                        <span class="rpt-live-skeleton">--</span>
+                    </div>
+                    <div class="rpt-stat-trend" id="statEvacuationTrend">Loading...</div>
+                </div>
+            </div>
+
+            <!-- MAIN GRID: Table + Metrics Panel -->
+            <div class="rpt-main-grid">
+
+                <!-- TABLE CARD -->
+                <div class="rpt-table-card">
+                    <div class="rpt-table-header">
+                        <div class="rpt-title-row">
+                            <h2>Recent Reports</h2>
+                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                                <button id="btnClearReports" class="rpt-btn-danger" onclick="openDeleteReportModal()">
+                                    <i data-lucide="trash-2"></i>
+                                    Delete Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="overflow-x:auto;">
+                        <table class="reports-table" id="reportsTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Date</th>
+                                    <!-- Fire simulation and alert logic -->
+                                    <th>Fire Corridor</th>
+                                    <th>Total Fires</th>
+                                    <th>Severity</th>
+                                    <th>Safety Score</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for day in days %}
+                                <tr class="report-row"
+                                    data-date="{{ day.date }}"
+                                    data-fire-count="{{ day.fire_count }}"
+                                    data-severity="{% if day.fire_count >= 3 %}High{% elif day.fire_count == 2 %}Medium{% else %}Low{% endif %}"
+                                    data-corridor="{{ day.corridor if day.corridor and day.corridor != 'None' else 'None' }}"
+                                    onclick="handleRowClick(this, '/report_details/{{ day.date }}')">
+                                    <td>
+                                        <span class="day-num-badge">DAY-{{ loop.index }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="date-cell-wrap">
+                                            <i data-lucide="calendar" style="width:14px;height:14px;color:#94a3b8;flex-shrink:0;"></i>
+                                            <span class="date-cell-text">{{ day.date }}</span>
+                                        </div>
+                                    </td>
+                                    <!-- Fire simulation and alert logic -->
+                                    <td>
+                                        {% if day.corridor and day.corridor not in ('None', '', 'null', 'none') %}
+                                            <span class="admin-corridor-badge">
+                                                <i data-lucide="map-pin" style="width:11px;height:11px;margin-right:4px;color:#4338ca;"></i>
+                                                Corridor {{ day.corridor }}
+                                            </span>
+                                        {% else %}
+                                            <span style="font-size:12px;color:#94a3b8;font-style:italic;">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="fires-count-badge">
+                                            <i data-lucide="flame" style="width:12px;height:12px;"></i>
+                                            {{ day.fire_count }} fire{{ 's' if day.fire_count != 1 else '' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if day.fire_count >= 3 %}
+                                            <span class="sev-badge sev-high">High</span>
+                                        {% elif day.fire_count == 2 %}
+                                            <span class="sev-badge sev-med">Medium</span>
+                                        {% else %}
+                                            <span class="sev-badge sev-low">Low</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set score = 95 - (day.fire_count * 9) %}
+                                        {% if score < 0 %}{% set score = 30 %}{% endif %}
+                                        <div class="score-wrap">
+                                            <div class="score-bar">
+                                                <div class="score-fill" style="
+                                                    width: {{ score }}%;
+                                                    background: {% if score >= 80 %}#22c55e{% elif score >= 60 %}#f59e0b{% else %}#ef4444{% endif %};
+                                                "></div>
+                                            </div>
+                                            <span style="font-size:13px;font-weight:600;color:var(--dark);">{{ score }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="rpt-action-btns">
+                                            <button class="rpt-view-btn"
+                                                    onclick="event.stopPropagation(); viewReportDetail('/report_details/{{ day.date }}')">
+                                                View Details
+                                                <i data-lucide="arrow-right"></i>
+                                            </button>
+                                            <button class="rpt-icon-btn" title="Download PDF"
+                                                    onclick="event.stopPropagation(); downloadRowPDF(this, '{{ day.date }}', {{ day.fire_count }})">
+                                                <i data-lucide="file-down"></i>
+                                            </button>
+                                            <button class="rpt-icon-btn" title="Analytics"
+                                                    onclick="event.stopPropagation(); scrollToAnalytics();">
+                                                <i data-lucide="bar-chart-3"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7">
+                                        <div class="rpt-empty-state">
+                                            <i data-lucide="folder-open" style="width:36px;height:36px;color:#cbd5e1;"></i>
+                                            <p>No historical incident reports found.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination footer -->
+                    <div class="rpt-pagination">
+                        <div class="rpt-page-info">
+                            Showing <strong id="visibleCount">{{ days | length }}</strong> of
+                            <strong>{{ days | length }}</strong> record(s)
+                            &nbsp;·&nbsp;
+                            <span class="rpt-footer-badge" id="rptFooterRoleBadge">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11"
+                                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                                Admin Mode
+                            </span>
+                        </div>
+                        <div class="rpt-page-btns">
+                            <button class="rpt-page-btn"><i data-lucide="chevron-left"></i></button>
+                            <button class="rpt-page-btn active">1</button>
+                            <button class="rpt-page-btn">2</button>
+                            <button class="rpt-page-btn">3</button>
+                            <button class="rpt-page-btn"><i data-lucide="chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page section -->
+                <div class="rpt-metrics-panel">
+                    <!-- Page section -->
+                    <div class="rpt-metric-card">
+                        <div class="rpt-metric-label">Average Response Time</div>
+                        <div class="rpt-metric-value" id="metricResponseTime">
+                            <span class="rpt-live-skeleton">--</span>
+                        </div>
+                        <div class="rpt-metric-bar">
+                            <div class="rpt-metric-fill" id="metricResponseFill"
+                                 style="width:0%;background:#5f8f84;transition:width .8s cubic-bezier(.4,0,.2,1);"></div>
+                        </div>
+                    </div>
+
+                    <!-- Page section -->
+                    <div class="rpt-metric-card">
+                        <div class="rpt-metric-label">Average Evacuation Time</div>
+                        <div class="rpt-metric-value" id="metricEvacTime">
+                            <span class="rpt-live-skeleton">--</span>
+                        </div>
+                        <div class="rpt-metric-bar">
+                            <div class="rpt-metric-fill" id="metricEvacFill"
+                                 style="width:0%;background:#f59e0b;transition:width .8s cubic-bezier(.4,0,.2,1);"></div>
+                        </div>
+                    </div>
+
+                    <!-- Page section -->
+                    <div class="rpt-metric-card">
+                        <div class="rpt-metric-label">System Reliability</div>
+                        <div class="rpt-metric-value" id="metricReliability">
+                            <span class="rpt-live-skeleton">--</span>
+                        </div>
+                        <div class="rpt-metric-bar">
+                            <div class="rpt-metric-fill" id="metricReliabilityFill"
+                                 style="width:0%;background:#22c55e;transition:width .8s cubic-bezier(.4,0,.2,1);"></div>
+                        </div>
+                    </div>
+
+                    <!-- Page section -->
+                    <div class="rpt-metric-card">
+                        <div class="rpt-metric-label">AI Detection Accuracy</div>
+                        <div class="rpt-metric-value" id="metricAIAccuracy">
+                            <span class="rpt-live-skeleton">--</span>
+                        </div>
+                        <div class="rpt-metric-bar">
+                            <div class="rpt-metric-fill" id="metricAIFill"
+                                 style="width:0%;background:#3b82f6;transition:width .8s cubic-bezier(.4,0,.2,1);"></div>
+                        </div>
+                    </div>
+
+                    <!-- Page section -->
+                    <div class="rpt-metrics-live-badge">
+                        <span class="rpt-live-dot"></span>
+                        Live data · updates every 30s
+                    </div>
+                </div>
+
+            </div><!-- /rpt-main-grid -->
+
+            <!-- CHARTS SECTION -->
+            <div class="rpt-charts-grid" id="analyticsSection">
+                <div class="rpt-chart-card">
+                    <div class="rpt-chart-title">Incidents Over Time</div>
+                    <svg id="svgLineChart" class="mini-line-chart" viewBox="0 0 260 140" xmlns="http://www.w3.org/2000/svg"></svg>
+                </div>
+                <div class="rpt-chart-card">
+                    <div class="rpt-chart-title">Alert Types Distribution</div>
+                    <div class="mini-pie-wrap" style="display:flex;justify-content:center;">
+                        <svg id="svgDonut" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" width="140" height="140"></svg>
+                    </div>
+                    <div class="rpt-donut-legend" style="margin-top:14px;">
+                        <div class="rpt-legend-item">
+                            <div class="rpt-legend-dot" style="background:#ef4444;"></div>
+                            <span>High — <strong id="donutHighCount">0 days</strong></span>
+                        </div>
+                        <div class="rpt-legend-item">
+                            <div class="rpt-legend-dot" style="background:#f59e0b;"></div>
+                            <span>Medium — <strong id="donutMedCount">0 days</strong></span>
+                        </div>
+                        <div class="rpt-legend-item">
+                            <div class="rpt-legend-dot" style="background:#22c55e;"></div>
+                            <span>Low — <strong id="donutLowCount">0 days</strong></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="rpt-chart-card">
+                    <div class="rpt-chart-title">Fire Count Per Day</div>
+                    <svg id="svgBarChart" class="mini-bar-chart" viewBox="0 0 260 140" xmlns="http://www.w3.org/2000/svg"></svg>
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <footer class="bottom-footer">
+                <div class="footer-left">
+                    <span class="status-item">
+                        System Status:
+                        <span class="text-success" id="footerSysStatus">Operational</span>
+                    </span>
+                    <span class="status-item">
+                        Total Records: <strong id="statDays">{{ days | length }}</strong>
+                    </span>
+                    <span class="status-item" id="footerRoleIndicator" style="
+                        display:inline-flex;align-items:center;gap:5px;padding:2px 10px;
+                        border-radius:12px;font-size:11px;font-weight:700;
+                        background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;
+                        transition:all 0.3s ease;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                             fill="none" stroke="currentColor" stroke-width="2.5">
+                            <rect x="3" y="11" width="18" height="11" rx="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        Admin Mode
+                    </span>
+                </div>
+                <div class="footer-right">
+                    <i data-lucide="clock" style="width:13px;height:13px;"></i>
+                    <span id="footerLastUpdated">Last updated just now</span>
+                </div>
+            </footer>
+
+        </div><!-- /rpt-page -->
+    </main>
+</div>
+
+<!-- Modern Delete Report Modal -->
+<div class="rpt-delete-modal" id="rptDeleteModal" aria-hidden="true">
+    <div class="rpt-delete-modal__backdrop" onclick="closeDeleteReportModal()"></div>
+    <div class="rpt-delete-modal__card" role="dialog" aria-modal="true" aria-labelledby="rptDeleteTitle">
+        <button type="button" class="rpt-delete-modal__x" onclick="closeDeleteReportModal()" aria-label="Close">
+            <i data-lucide="x"></i>
+        </button>
+
+        <div class="rpt-delete-modal__icon">
+            <i data-lucide="trash-2"></i>
+        </div>
+
+        <h2 id="rptDeleteTitle">Delete selected report</h2>
+        <p>Choose one historical incident report to delete. This action removes only the selected record.</p>
+
+        <label class="rpt-delete-modal__label" for="deleteReportSelect">Report</label>
+        <select id="deleteReportSelect" class="rpt-delete-modal__select">
+            <option value="">Select a report...</option>
+        </select>
+
+        <div class="rpt-delete-modal__hint" id="deleteReportHint">
+            Admin access is required to delete reports.
+        </div>
+
+        <div class="rpt-delete-modal__actions">
+            <button type="button" class="rpt-delete-modal__cancel" onclick="closeDeleteReportModal()">Cancel</button>
+            <button type="button" class="rpt-delete-modal__delete" id="confirmDeleteReportBtn" onclick="confirmDeleteSelectedReport()">
+                <i data-lucide="trash-2"></i>
+                Delete selected
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Fire simulation and alert logic -->
+<script>
+var DAYS_DATA = [
+    {% for day in days %}
+    {
+        date: "{{ day.date }}",
+        fire_count: {{ day.fire_count }},
+        corridor: "{{ day.corridor if day.corridor and day.corridor not in ('None', '', 'null', 'none') else 'None' }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+</script>
+
+<script>lucide.createIcons();</script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+
+</body>
+</html>
