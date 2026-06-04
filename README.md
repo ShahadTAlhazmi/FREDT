@@ -1,4 +1,4 @@
-# FREDT — Fire Risk and Evacuation Decision Technology
+# FREDT: Fire Risk Evaluation and Decision Support System
 
 FREDT is a Flask-based graduation project designed to support fire risk monitoring, corridor congestion tracking, SMS alert logging, and safe evacuation route decision-making through an AI-powered emergency management system.
 
